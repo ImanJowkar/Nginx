@@ -51,7 +51,10 @@ server {
 
 }
 ```
-# MIME
+
+
+
+
 ```
 # attention to content-type
 curl -I http://qqq.net/index.html
