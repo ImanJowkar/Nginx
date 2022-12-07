@@ -35,7 +35,7 @@ If The upstream server is not responding or rejecting connections, the passive h
 upstream backend {
         least_conn; #forward request to a backend which has minimum active connection
         server 192.168.197.166:80 max_fails=2 fail_timeout=20s weight=2;
-        server 192.168.197.166:81;
+        server 192.168.197.166:81 weight=1;
 }
 
 
@@ -52,7 +52,7 @@ server {
 }
 
 ```
-in active monitoring the server try to connect the backend server (5 second by default) if the backend server doesn't responsed the server doesn't send any request to backend server.
+in active monitoring the server try to connect the backend server (5 second by default) if the backend server doesn't responsed, Nginx doesn't send any request to backend server.
 
 
 **all worker processes in nginx use a shared memory, because they have to use the same information about the backend server**
@@ -86,3 +86,4 @@ server {
 
 ```
 
+# Load Balancing Algorithm
