@@ -2,8 +2,8 @@
 ```
 
 upstream backend {
-	server 192.168.197.166:80;
-	server 192.168.197.166:81;
+	server 172.16.197.2:80;
+	server 172.16.197.3:81;
 }
 
 
@@ -34,8 +34,8 @@ If The upstream server is not responding or rejecting connections, the passive h
 ```
 upstream backend {
         least_conn; #forward request to a backend which has minimum active connection
-        server 192.168.197.166:80 max_fails=2 fail_timeout=20s weight=2;
-        server 192.168.197.166:81 weight=1;
+        server 172.16.197.4:80 max_fails=2 fail_timeout=20s weight=2;
+        server 172.16.197.4:81 weight=1;
 }
 
 
@@ -59,8 +59,8 @@ in active monitoring the server try to connect the backend server (5 second by d
 
 ```
 upstream backend {
-        server 192.168.197.166:80 max_fails=2 fail_timeout=20s;
-        server 192.168.197.166:81;
+        server 172.16.197.4:80 max_fails=2 fail_timeout=20s;
+        server 172.16.197.4:81;
         zone backend 64k
 }
 
