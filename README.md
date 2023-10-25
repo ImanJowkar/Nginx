@@ -1,103 +1,124 @@
 # Nginx 
-![MarineGEO circle logo](images/img1.png)
-
 
 ```
-ps -ef --forest | grep nginx
-# worker process depending on the number of cpu core if it is set on auto.
-
-master process run as a root
-worker process run as non-root, in my case run as www-data
+openssl req -x509 -newkey rsa:4096 -sha256 -nodes -keyout pri.key -out pub.crt -subj "/CN=test.local.local" -days 5421
 
 
-nginx -t
-nginx -s reload
-
-
-# if you want doesn't show nginx version, use this command in /etc/nginx/nginx.conf
-
-server_tokens   off;
-
-# if you want add custom 404.html to your website add this in your virtual server
-error_page  404              /404.html;
-
-# but be sure the 404.html must be in the /usr/share/nginx/html
-
-
-
-################################################
-# the final config file in /etc/nginx/conf.d/site.conf is like this: 
-
-server {
-    listen       80;
-    listen  [::]:80;
-    server_name  localhost;
-
-    #access_log  /var/log/nginx/host.access.log  main;
-
-    location / {
-        root   /usr/share/nginx/html;
-        index  index.html index.htm;
-    }
-
-    error_page  404              /404.html;
-
-    # redirect server error pages to the static page /50x.html
-    #
-    error_page   500 502 503 504  /50x.html;
-    location = /50x.html {
-        root   /usr/share/nginx/html;
-    }
-
-}
-```
+echo -n 'sammy:' >> /etc/nginx/.htpasswd
+openssl passwd -apr1 >> /etc/nginx/.htpasswd
 
 
 
 
-```
-# attention to content-type
-curl -I http://qqq.net/index.html
-tcpdump -A -vvvv -s 9999 -i eth0 port 80 > /tmp/headers
+
+tree /usr/share/nginx/
+
+|-- html
+|   |-- 50x.html
+|   `-- index.html
+|-- notfound.html
+|   `-- 404.html
+`-- site1
+    |-- about
+    |   `-- about.html
+    |-- images
+    |   `-- index.html
+    `-- index.html
+
+6 directories, 6 files
+
 
 ```
 
 
 # This is a sample configuration for reverse proxy 
 ```
-server {
-        server_name nginx.example.local;
-        location / {
-                proxy_pass http://192.168.197.166:80;
-                proxy_set_header X-Real-IP $remote_addr;
-                proxy_set_header Host $host;
+user  nginx;
+worker_processes  auto;
 
-        }
+error_log  /var/log/nginx/error.log notice;
+pid        /var/run/nginx.pid;
 
-}
 
-server {
-        server_name qqq.com;
-        location / {
-                proxy_pass http://192.168.197.166:80;
-                proxy_set_header X-Real-IP $remote_addr;
-                proxy_set_header Host $host;
-
-        }
-
-}
-server {
-        server_name qqq.net;
-        location / {
-                proxy_pass http://192.168.197.166:80;
-                proxy_set_header X-Real-IP $remote_addr;
-                proxy_set_header Host $host;
-
-        }
-
+events {
+    worker_connections  1024;
 }
 
 
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log  /var/log/nginx/access.log  main;
+
+    sendfile        on;
+    #tcp_nopush     on;
+    server_tokens off;
+    keepalive_timeout  65;
+
+    #gzip  on;
+
+    include /etc/nginx/conf.d/*.conf;
+
+
+
+
+    server {
+
+        listen 80;
+        server_name localhost;
+        root /usr/share/nginx/site1;
+
+        error_page 404 /notfound.html;
+
+        location / {
+                index NO_EXISTENT_INDEX;
+                autoindex on;
+        }
+
+
+        location /about/ {
+                index about.html;
+        }
+
+        location /images/ {
+                index index.html;
+                auth_basic "Restricted Content";
+                auth_basic_user_file /etc/nginx/.htpasswd;
+        }
+
+
+        location /notfound.html {
+
+                root /usr/share/nginx/;
+                index 404.html;
+        }
+
+    }
+
+
+    server {
+
+        listen 8080 ssl;
+        server_name test.local.local;
+        ssl_certificate /etc/ssl/pub.crt;
+        ssl_certificate_key /etc/ssl/pri.key;
+
+        location / {
+
+                proxy_pass http://<python-fastapi-ip>:8000;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                auth_basic "Restricted Content";
+                auth_basic_user_file /etc/nginx/.htpasswd;
+        }
+
+    }
+}
 
 
 ```
